@@ -1,7 +1,7 @@
 /*
 ***Harjoitustyö***
 Kuvaus: Ohjelmaan voi tallentaa elokuvien ja albumien nimet sekä julkaisuvuodet.
-		Ohjelma tallentaa tiedot erillisiin .txt tiedostoihin ja tarvittaessa tulostaa tiedot näytölle.
+		Ohjelma tallentaa tiedot erillisiin .txt tiedostoihin ja tarvittaessa tulostaa tiedot näytölle aakkosjärjestyksessä.
 		Tiedostot on myös mahdollista tyhjentää.
 Tekijä: Joel Kortelainen
 Versio: 1.0
@@ -11,6 +11,11 @@ Versio: 1.0
 #include <vector>
 #include <string>
 #include <fstream>
+#include <iterator>
+#include <cctype>
+#include <algorithm>
+#include <ctype.h>
+#include <utility>
 
 using namespace std;
 
@@ -25,6 +30,8 @@ struct albumInfo{
 	string releaseYear;
 };
 
+vector<string> savedMovies;
+vector<string> savedAlbums;
 vector<albumInfo> album;
 vector<movieInfo> movie;
 string getUserInputString();
@@ -39,7 +46,9 @@ void addNewAlbum();
 void printSavedAlbums();
 void saveAlbumsToFile();
 void clearSavedAlbumFile();
+void loadSavedMovies();
 int menuSelection();
+bool compareStrings(string, string);
 
 int main()
 {
@@ -47,6 +56,7 @@ int main()
 	menu();
 	return EXIT_SUCCESS;
 }
+
 
 
 void menu()
@@ -70,7 +80,7 @@ int menuSelection()
 	int userSelection = getUserInputInteger();
 	switch (userSelection)
 	{
-	case 0: exit(0);
+	case 0: return 0;
 	case 1: addNewMovie();
 		break;
 	case 2: printSavedMovies();
@@ -95,6 +105,7 @@ int menuSelection()
 
 void saveMoviesToFile()
 {
+	clearConsole();
 	fstream saveFile;
 	saveFile.open("movies.txt", fstream::out | fstream::app);
 	for each (movieInfo element in movie)
@@ -102,23 +113,47 @@ void saveMoviesToFile()
 		saveFile << element.movieName << " " << "(" << element.releaseYear << ")" << endl;
 	}
 	saveFile.close();
-	menu();
+	movie.clear();
+	cout << "All contents successfully saved. Press enter to go back to the menu.";
+	cin.get();
+}
+
+void loadSavedMovies()
+{
+	savedMovies.erase(savedMovies.begin(), savedMovies.end());
+	string savedMovie;
+	fstream loadfile("movies.txt", fstream::in);
+	while (getline(loadfile, savedMovie))
+	{
+		savedMovies.push_back(savedMovie);
+	}
+	loadfile.close();
+}
+
+void loadSavedAlbums()
+{
+	savedAlbums.erase(savedAlbums.begin(), savedAlbums.end());
+	string savedAlbum;
+	fstream loadfile("albums.txt", fstream::in);
+	while (getline(loadfile, savedAlbum))
+	{
+		savedAlbums.push_back(savedAlbum);
+	}
+	loadfile.close();
 }
 
 void printSavedMovies()
 {
+	vector<string>::iterator stringSort;
 	clearConsole();
-	fstream loadFile;
-	loadFile.open("movies.txt", fstream::in);
-	cout << "Your saved movies:" << endl;
-	while (loadFile.good())
+	loadSavedMovies();
+	sort(savedMovies.begin(), savedMovies.end(), compareStrings);
+	for (stringSort = savedMovies.begin(); stringSort != savedMovies.end(); stringSort++)
 	{
-		cout << (char)loadFile.get();
+		cout << *stringSort << endl;
 	}
-	loadFile.close();
 	cout << endl << "Press enter to go back to the menu.";
 	cin.get();
-	menu();
 }
 
 void addNewMovie()
@@ -130,7 +165,6 @@ void addNewMovie()
 	cout << "Release year: ";
 	newMovie.releaseYear = getUserInputString();
 	movie.push_back(newMovie);
-	menu();
 }
 
 void clearSavedMovieFile()
@@ -141,6 +175,7 @@ void clearSavedMovieFile()
 	cin >> yesOrNo;
 	if (yesOrNo == 'y')
 	{
+		savedMovies.clear();
 		fstream saveFile;
 		saveFile.open("movies.txt", fstream::in | fstream::out | fstream::trunc);
 		saveFile.close();
@@ -148,9 +183,7 @@ void clearSavedMovieFile()
 		cout << "All contents successfully deleted. Press enter to go back to the menu.";
 		cin.ignore(1, '\n');
 		cin.get();
-		menu();
 	}
-	menu();
 }
 
 void addNewAlbum()
@@ -164,11 +197,11 @@ void addNewAlbum()
 	cout << "Release year: ";
 	newAlbum.releaseYear = getUserInputString();
 	album.push_back(newAlbum);
-	menu();
 }
 
 void saveAlbumsToFile()
 {
+	clearConsole();
 	fstream saveFile;
 	saveFile.open("albums.txt", fstream::out | fstream::app);
 	for each (albumInfo element in album)
@@ -176,23 +209,24 @@ void saveAlbumsToFile()
 		saveFile << element.artistName << " - " << element.albumName << " " << "(" << element.releaseYear << ")" << endl;
 	}
 	saveFile.close();
-	menu();
+	album.clear();
+	cout << "All contents successfully saved. Press enter to go back to the menu.";
+	cin.get();
+
 }
 
 void printSavedAlbums()
 {
+	vector<string>::iterator stringSort;
 	clearConsole();
-	fstream loadFile;
-	loadFile.open("albums.txt", fstream::in);
-	cout << "Your saved albums:" << endl;
-	while (loadFile.good())
+	loadSavedAlbums();
+	sort(savedAlbums.begin(), savedAlbums.end(), compareStrings);
+	for (stringSort = savedAlbums.begin(); stringSort != savedAlbums.end(); stringSort++)
 	{
-		cout << (char)loadFile.get();
+		cout << *stringSort << endl;
 	}
-	loadFile.close();
 	cout << endl << "Press enter to go back to the menu.";
 	cin.get();
-	menu();
 }
 
 void clearSavedAlbumFile()
@@ -203,6 +237,7 @@ void clearSavedAlbumFile()
 	cin >> yesOrNo;
 	if (yesOrNo == 'y')
 	{
+		savedAlbums.clear();
 		fstream saveFile;
 		saveFile.open("albums.txt", fstream::in | fstream::out | fstream::trunc);
 		saveFile.close();
@@ -210,9 +245,7 @@ void clearSavedAlbumFile()
 		cout << "All contents successfully deleted. Press enter to go back to the menu.";
 		cin.ignore(1, '\n');
 		cin.get();
-		menu();
 	}
-	menu();
 }
 
 int getUserInputInteger()
@@ -233,4 +266,11 @@ string getUserInputString()
 void clearConsole()
 {
 	system("cls");
+}
+
+bool compareStrings(string firstString, string secondString)
+{
+	transform(firstString.begin(), firstString.end(), firstString.begin(), ::toupper);
+	transform(secondString.begin(), secondString.end(), secondString.begin(), ::toupper);
+	return firstString.compare(secondString) < 0;
 }
